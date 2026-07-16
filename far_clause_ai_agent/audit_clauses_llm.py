@@ -4,7 +4,7 @@ import asyncio
 
 from string import Template
 
-from .extract_clauses import classify_clause, extract_clause_mentions
+from .extract_clauses import classify_clause, extract_clause_mentions, normalize_clause_id
 from .llm_client import LLMClient
 
 
@@ -38,7 +38,7 @@ def llm_extract_clause_ids(chunks: list[dict[str, object]], client: LLMClient | 
     clause_ids = response.get("clause_ids", [])
     mentions: list[dict[str, object]] = []
     for clause_id in clause_ids:
-        clause_id_text = str(clause_id)
+        clause_id_text = normalize_clause_id(str(clause_id))
         mentions.append(
             {
                 "clause_ref_raw": clause_id_text,

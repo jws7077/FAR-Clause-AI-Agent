@@ -45,6 +45,55 @@ def _evidence_is_strong(obligation: dict[str, object], snippets: list[dict[str, 
     return len(overlap) >= max(2, min(3, len(important_tokens)))
 
 
+def _normalize_result_item(item: dict[str, object], snippets: list[dict[str, object]]) -> dict[str, object] | None:
+    if not isinstance(item, dict):
+        return None
+
+    obligation_id = str(item.get("obligation_id", "")).strip()
+    if not obligation_id:
+        return None
+
+    status = str(item.get("status", "Unclear")).strip()
+    if status not in {"Covered", "NotCovered", "Unclear"}:
+        status = "Unclear"
+
+    proposal_quote = item.get("proposal_quote", "Not found")
+    if not isinstance(proposal_quote, str):
+        proposal_quote = "Not found"
+
+    proposal_location = item.get("proposal_location", "Not found")
+    if not isinstance(proposal_location, str):
+        proposal_location = "Not found"
+
+    rationale = item.get("rationale", "")
+    if not isinstance(rationale, str):
+        rationale = ""
+
+    try:
+        confidence = float(item.get("confidence", 0.3))
+    except (TypeError, ValueError):
+        confidence = 0.3
+
+    source_text = str(snippets[0].get("quote", "")) if snippets else ""
+    if proposal_quote != "Not found" and source_text and not verify_quote(proposal_quote, source_text):
+        proposal_quote = "Not found"
+        confidence = min(confidence, 0.3)
+
+    if proposal_quote == "Not found":
+        confidence = min(confidence, 0.3)
+        if status == "Covered":
+            status = "Unclear"
+
+    return {
+        "obligation_id": obligation_id,
+        "status": status,
+        "proposal_quote": proposal_quote,
+        "proposal_location": proposal_location,
+        "rationale": rationale,
+        "confidence": confidence,
+    }
+
+
 def decide_coverage_batch(
     clause_id: str,
     obligations: list[dict[str, object]],
@@ -69,23 +118,21 @@ def decide_coverage_batch(
 
         results: list[dict[str, object]] = []
         for item in response.get("results", []):
-            obligation_id = str(item.get("obligation_id", "O1"))
+            normalized = _normalize_result_item(item, snippets_by_obligation.get(str(item.get("obligation_id", "")), []))
+            if normalized is None:
+                continue
+            obligation_id = normalized["obligation_id"]
             snippets = snippets_by_obligation.get(obligation_id, [])
-            original_quote = item.get("proposal_quote", "Not found")
-            proposal_quote = original_quote
-            source_text = str(snippets[0].get("quote", "")) if snippets else ""
-            if proposal_quote != "Not found" and not verify_quote(str(proposal_quote), source_text):
-                proposal_quote = "Not found"
             results.append(
                 {
                     "clause_id_normalized": clause_id,
                     "obligation_id": obligation_id,
-                    "status": str(item.get("status", "Unclear")),
-                    "proposal_quote": proposal_quote,
-                    "raw_proposal_quote": original_quote,
-                    "proposal_location": str(item.get("proposal_location", "Not found")),
-                    "rationale": str(item.get("rationale", "")),
-                    "confidence": min(float(item.get("confidence", 0.3)), 0.3) if proposal_quote == "Not found" and original_quote != "Not found" else float(item.get("confidence", 0.3)),
+                    "status": normalized["status"],
+                    "proposal_quote": normalized["proposal_quote"],
+                    "raw_proposal_quote": item.get("proposal_quote", "Not found"),
+                    "proposal_location": normalized["proposal_location"],
+                    "rationale": normalized["rationale"],
+                    "confidence": normalized["confidence"],
                 }
             )
         return results

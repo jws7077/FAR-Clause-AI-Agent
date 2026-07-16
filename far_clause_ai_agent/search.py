@@ -41,3 +41,37 @@ def search_snippets(proposal_docs: list[dict[str, object]], queries: list[str], 
 
     scored.sort(key=lambda item: item["score"], reverse=True)
     return scored[:top_k]
+
+
+def search_snippets_with_context(
+    proposal_docs: list[dict[str, object]],
+    queries: list[str],
+    top_k: int = 5,
+    context_window: int = 500,
+) -> list[dict[str, object]]:
+    snippets = search_snippets(proposal_docs, queries, top_k=top_k)
+    enriched: list[dict[str, object]] = []
+    for snippet in snippets:
+        doc_id = snippet["doc_id"]
+        start_char = int(snippet["start_char"])
+        end_char = int(snippet["end_char"])
+        quote = snippet["quote"]
+
+        source_text = ""
+        for doc in proposal_docs:
+            if str(doc.get("doc_id", "")) == doc_id:
+                source_text = str(doc.get("text", ""))
+                break
+
+        if source_text:
+            context_start = max(0, start_char - context_window)
+            context_end = min(len(source_text), end_char + context_window)
+            quote = source_text[context_start:context_end]
+
+        enriched.append(
+            {
+                **snippet,
+                "quote": quote,
+            }
+        )
+    return enriched

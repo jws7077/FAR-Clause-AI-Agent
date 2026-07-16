@@ -17,3 +17,17 @@ python -m far_clause_ai_agent run --solicitation path/to/solicitation.docx --pro
 ```
 
 Use `--mock-llm` or `MOCK_LLM=1` for fixture-driven runs.
+
+## Corpus Layout
+
+Clause texts live under `data/corpus/` using family and clause id folders:
+
+```text
+data/corpus/
+	FAR/52.212-4/latest.txt
+	FAR/52.212-4/2024-01-01.txt
+	DFARS/252.204-7012/latest.txt
+	AGENCY/HHSAR-352.222-70/latest.txt
+```
+
+Use `latest.txt` for the default canonical text and add dated files when the solicitation references a specific effective date.

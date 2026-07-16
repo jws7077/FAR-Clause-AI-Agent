@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
 from typing import Iterable
 
 
 CLAUSE_PATTERN = re.compile(
-    r"\b(?:(FAR|DFARS|GSAM|HHSAR|VAAR|agency|agency supplement)\s+)?(?P<id>(?:\d{1,4}\.)?\d{1,3}(?:-\d{1,4})?(?:\([a-z0-9]+\))?)\b",
+    r"\b(?:(FAR|DFARS|GSAM|HHSAR|VAAR|agency|agency supplement)\s+)?(?P<id>(?:\d{1,4}\.)?\d{1,3}(?:-\d{1,4})?(?:\([a-z0-9]+\))*)(?=\s|$|[.,;:])",
     re.IGNORECASE,
 )
 
@@ -30,7 +29,11 @@ def classify_clause(clause_id: str) -> str:
 
 
 def parse_metadata_from_context(text: str) -> dict[str, str | None]:
-    date_match = re.search(r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", text, re.IGNORECASE)
+    date_match = re.search(
+        r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+\d{4}\b|\b\d{4}-\d{2}-\d{2}\b",
+        text,
+        re.IGNORECASE,
+    )
     title_match = re.search(r"\b(?:Clause|Provision|Section)\s+([A-Za-z0-9 ,./-]{3,80})", text)
     alternate_match = re.search(r"\bAlternate\s+[A-Z0-9]+\b", text, re.IGNORECASE)
     return {
@@ -50,12 +53,18 @@ def extract_clause_mentions(text: str) -> list[dict[str, object]]:
             "quote": text[match.start():match.end()],
         }
         metadata = parse_metadata_from_context(text[max(0, match.start() - 200): match.end() + 200])
+        title_guess = metadata["title_guess"]
+        if not title_guess and match.end() < len(text):
+            trailing_text = text[match.end(): match.end() + 80]
+            title_match = re.match(r"[\s:\-–—]*([A-Za-z0-9 ,./()&'\-]{3,80})", trailing_text)
+            if title_match:
+                title_guess = title_match.group(1).strip()
         mentions.append(
             {
                 "clause_ref_raw": match.group(0),
                 "clause_id_normalized": clause_id,
                 "family": classify_clause(clause_id),
-                "title_guess": metadata["title_guess"],
+                "title_guess": title_guess,
                 "date_guess": metadata["date_guess"],
                 "alternate_guess": metadata["alternate_guess"],
                 "citation": citation,

@@ -15,7 +15,7 @@ from .llm_client import LLMClient
 from .obligations_llm import extract_obligations
 from .render import render_markdown
 from .scoring import assign_severity
-from .search import search_snippets
+from .search import search_snippets_with_context
 
 
 def _load_document(path: Path) -> dict[str, object]:
@@ -98,7 +98,12 @@ def _build_report(
                 )
         snippets_by_obligation = {}
         for obligation in clause_obligations:
-            snippets_by_obligation[str(obligation["obligation_id"])] = search_snippets(proposal_docs, list(obligation.get("search_queries", [])), top_k=config.search_top_k)
+            snippets_by_obligation[str(obligation["obligation_id"])] = search_snippets_with_context(
+                proposal_docs,
+                list(obligation.get("search_queries", [])),
+                top_k=config.search_top_k,
+                context_window=config.clause_context_window,
+            )
         clause_results = decide_coverage_batch(clause_id, clause_obligations, snippets_by_obligation, client=client)
         for result in clause_results:
             obligation = next((item for item in clause_obligations if item["obligation_id"] == result["obligation_id"]), None)
