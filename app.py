@@ -19,12 +19,13 @@ from pathlib import Path
 import shutil
 
 from fastapi import FastAPI, UploadFile, File, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
+LATEST_OUTPUT = None
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -64,9 +65,13 @@ async def analyze(
     config,
     client,
 )
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = Path("output") / timestamp
     output_dir.mkdir(exist_ok=True)
+
+    global LATEST_OUTPUT
+    LATEST_OUTPUT = output_dir
 
     (output_dir / "report.json").write_text(
     json.dumps(report, indent=2),
@@ -81,9 +86,43 @@ async def analyze(
     request=request,
     name="result.html",
     context={
-        "clauses": len(report["rfp_clause_index"]),
-        "obligations": len(report["obligations"]),
-        "coverage": len(report["coverage_results"]),
-        "flags": len(report["flags"]),
-    },
+    "clauses": len(report["rfp_clause_index"]),
+    "obligations": len(report["obligations"]),
+    "coverage": len(report["coverage_results"]),
+    "flags": len(report["flags"]),
+    "coverage_percent": round(
+        (
+            len(report["coverage_results"])
+            / max(len(report["obligations"]), 1)
+        ) * 100
+    ),
+    "report": report,
+
+    "top_flags": report["flags"][:10],
+    "coverage_results": report["coverage_results"][:10],
+    "obligations_list": report["obligations"][:10],
+    "clauses_list": report["rfp_clause_index"][:10],
+},
 )
+@app.get("/download/report.md")
+async def download_markdown():
+    if LATEST_OUTPUT is None:
+        return {"error": "No report has been generated yet."}
+
+    return FileResponse(
+        path=LATEST_OUTPUT / "report.md",
+        filename="report.md",
+        media_type="text/markdown",
+    )
+
+
+@app.get("/download/report.json")
+async def download_json():
+    if LATEST_OUTPUT is None:
+        return {"error": "No report has been generated yet."}
+
+    return FileResponse(
+        path=LATEST_OUTPUT / "report.json",
+        filename="report.json",
+        media_type="application/json",
+    )

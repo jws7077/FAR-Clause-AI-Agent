@@ -1,0 +1,9 @@
+FAR 52.204-21 Basic Safeguarding of Covered Contractor Information Systems
+
+The contractor shall apply basic safeguarding requirements to protect covered contractor information systems.
+
+The contractor shall:
+- limit system access to authorized users;
+- identify users before granting access;
+- protect systems from unauthorized access;
+- provide adequate security measures to protect information.
