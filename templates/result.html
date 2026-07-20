@@ -87,6 +87,7 @@
 
         .progress-bar {
         height: 100%;
+        width: var(--progress-width);
         background: #2563eb;
         transition: width .4s ease;
         }
@@ -165,7 +166,7 @@
         <div class="progress-container">
             <div
                 class="progress-bar"
-                style="width: {{ coverage_percent }}%;">
+                style="--progress-width: {{ coverage_percent }}%;">
             </div>
         </div>
 

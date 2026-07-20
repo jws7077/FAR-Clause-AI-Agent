@@ -21,10 +21,8 @@ def classify_clause(clause_id: str) -> str:
     clause_id = normalize_clause_id(clause_id)
     if clause_id.startswith("252."):
         return "DFARS"
-    if clause_id.startswith("48.") or clause_id.startswith("52."):
+    if clause_id.startswith(("48.", "52.")):
         return "FAR"
-    if clause_id.startswith(("30", "31", "32", "33", "34", "36", "37", "38", "40", "45", "70", "75", "90")):
-        return "AGENCY"
     return "UNKNOWN"
 
 

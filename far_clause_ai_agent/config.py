@@ -17,7 +17,7 @@ class Config:
     retry_attempts: int = 3
     retry_backoff_seconds: float = 0.5
     model_name: str = "gpt-5.4-mini"
-    mock_llm: bool = False
+    mock_llm: bool = True
 
 
 def load_config() -> Config:
@@ -32,5 +32,5 @@ def load_config() -> Config:
         retry_attempts=int(os.getenv("LLM_RETRY_ATTEMPTS", "3")),
         retry_backoff_seconds=float(os.getenv("LLM_RETRY_BACKOFF_SECONDS", "0.5")),
         model_name=os.getenv("LLM_MODEL", "gpt-5.4-mini"),
-        mock_llm=os.getenv("MOCK_LLM", "0") == "1",
+        mock_llm=True,
     )

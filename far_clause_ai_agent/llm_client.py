@@ -35,6 +35,7 @@ class LLMClient:
         self.call_count = 0
         self.token_count = 0
         self.mock_llm = bool(config.mock_llm or os.getenv("MOCK_LLM", "0") == "1")
+        self.mock_llm = bool(config.mock_llm or os.getenv("MOCK_LLM", "0") == "1")
         self.api_url = os.getenv("LLM_API_URL", "")
         self.api_key = os.getenv("LLM_API_KEY", "")
 
@@ -67,7 +68,7 @@ class LLMClient:
                 fixture_path = Path(self.config.fixtures_root) / fixture_name
                 if fixture_path.exists():
                     return fixture_path.read_text(encoding="utf-8")
-            return json.dumps({"mock": True})
+                return json.dumps({"mock": True})
 
         if not self.api_url:
             return json.dumps({"mock": True, "prompt_preview": prompt[:200]})
