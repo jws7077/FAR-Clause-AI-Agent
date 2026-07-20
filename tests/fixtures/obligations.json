@@ -1,1 +1,14 @@
-{"obligations": [{"obligation_id": "O1", "requirement": "Provide required reporting.", "clause_quote": "shall provide required reporting", "search_queries": ["provide reporting", "required reporting", "reporting shall"]}]}
+{
+  "obligations": [
+    {
+      "obligation_id": "O1",
+      "requirement": "Provide required reporting.",
+      "clause_quote": "The Contractor shall rapidly report cyber incidents to DoD at https://dibnet.dod.mil.",
+      "search_queries": [
+        "provide reporting",
+        "required reporting",
+        "reporting shall"
+      ]
+    }
+  ]
+}

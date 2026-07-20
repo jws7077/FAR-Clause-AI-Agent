@@ -43,9 +43,7 @@ def _build_report(
 ) -> dict[str, object]:
     solicitation_text = "\n".join(str(doc["text"]) for doc in solicitation_docs)
 
-    rfp_clause_index = llm_extract_clause_ids([{"text": solicitation_text}], client=client)
-    if not rfp_clause_index:
-        rfp_clause_index = extract_clause_mentions(solicitation_text)
+    rfp_clause_index = extract_clause_mentions(solicitation_text)
 
     canonical_clause_texts = []
     obligations = []
@@ -81,21 +79,15 @@ def _build_report(
                     "confidence": 0.5,
                 }
             )
-        clause_obligations = extract_obligations(clause_id, str(canonical["canonical_text"]), mention, client=client)
+        clause_obligations = extract_obligations(
+            clause_id,
+            str(canonical["canonical_text"]),
+            mention,
+            client=client,
+        )
         obligations.extend(clause_obligations)
-        for obligation in clause_obligations:
-            if obligation.get("clause_quote") is None and obligation.get("raw_clause_quote"):
-                flags.append(
-                    {
-                        "type": "UnverifiedQuote",
-                        "clause_id_normalized": clause_id,
-                        "obligation_id": obligation["obligation_id"],
-                        "severity": "Medium",
-                        "citation": {"doc_id": "", "start_char": 0, "end_char": 0, "quote": ""},
-                        "summary": str(obligation.get("raw_clause_quote", ""))[:500],
-                        "confidence": 0.3,
-                    }
-                )
+
+
         snippets_by_obligation = {}
         for obligation in clause_obligations:
             snippets_by_obligation[str(obligation["obligation_id"])] = search_snippets_with_context(
@@ -109,18 +101,6 @@ def _build_report(
             obligation = next((item for item in clause_obligations if item["obligation_id"] == result["obligation_id"]), None)
             severity = assign_severity(obligation, result["status"], canonical_missing=False, date_mismatch=bool(canonical.get("date_mismatch")))
             result["severity"] = severity
-            if result.get("proposal_quote") == "Not found" and result.get("raw_proposal_quote") not in (None, "Not found"):
-                flags.append(
-                    {
-                        "type": "UnverifiedQuote",
-                        "clause_id_normalized": clause_id,
-                        "obligation_id": result["obligation_id"],
-                        "severity": "Medium",
-                        "citation": {"doc_id": "", "start_char": 0, "end_char": 0, "quote": ""},
-                        "summary": str(result.get("raw_proposal_quote", ""))[:500],
-                        "confidence": 0.3,
-                    }
-                )
             coverage_results.append(result)
 
         for obligation in clause_obligations:
