@@ -47,6 +47,10 @@ def extract_clause_mentions(text: str) -> list[dict[str, object]]:
     mentions: list[dict[str, object]] = []
     for match in CLAUSE_PATTERN.finditer(text):
         clause_id = normalize_clause_id(match.group("id"))
+
+        if classify_clause(clause_id) == "UNKNOWN":
+            continue
+
         citation = {
             "start_char": match.start(),
             "end_char": match.end(),
